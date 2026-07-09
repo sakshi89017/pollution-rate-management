@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Air Quality Dashboard</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <i class="fa-solid fa-earth-americas logo-icon"></i>
+                <h2>AQI Dashboard</h2>
+            </div>
+            
+            <div class="controls-container">
+                <div class="control-group">
+                    <label for="countrySelect"><i class="fa-solid fa-map-location-dot"></i> Select Country</label>
+                    <select id="countrySelect" class="form-control">
+                        <option value="All">All Countries</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label><i class="fa-solid fa-filter"></i> Filter AQI Categories</label>
+                    <div id="categoryContainer" class="checkbox-group">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="aqiSlider"><i class="fa-solid fa-gauge-high"></i> AQI Value Range: <span id="aqiRangeValue">0 - 500</span></label>
+                    <div class="range-inputs">
+                        <input type="range" id="aqiMinSlider" min="0" max="500" value="0" class="range-slider">
+                        <input type="range" id="aqiMaxSlider" min="0" max="500" value="500" class="range-slider">
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-stats-sidebar">
+                <h3><i class="fa-solid fa-chart-simple"></i> Quick Stats</h3>
+                <div class="sidebar-stat">
+                    <span class="label">Total Records</span>
+                    <span class="value" id="sideTotalRecords">-</span>
+                </div>
+                <div class="sidebar-stat">
+                    <span class="label">Total Countries</span>
+                    <span class="value" id="sideTotalCountries">-</span>
+                </div>
+                <div class="sidebar-stat">
+                    <span class="label">Avg AQI</span>
+                    <span class="value" id="sideAvgAqi">-</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="main-header">
+                <div class="header-titles">
+                    <h1>Global Air Quality Dashboard</h1>
+                    <p class="subtitle">Real-time monitoring of air pollution across the globe</p>
+                </div>
+            </header>
+
+            <!-- Tabs Navigation -->
+            <nav class="tabs-nav">
+                <button class="tab-btn active" data-tab="tab-overview"><i class="fa-solid fa-chart-pie"></i> Overview</button>
+                <button class="tab-btn" data-tab="tab-analytics"><i class="fa-solid fa-chart-line"></i> Analytics</button>
+                <button class="tab-btn" data-tab="tab-hazardous"><i class="fa-solid fa-triangle-exclamation"></i> Hazardous</button>
+                <button class="tab-btn" data-tab="tab-deepdive"><i class="fa-solid fa-magnifying-glass"></i> Deep Dive</button>
+                <button class="tab-btn" data-tab="tab-visuals"><i class="fa-solid fa-palette"></i> Visualizations</button>
+                <button class="tab-btn" data-tab="tab-map"><i class="fa-solid fa-map"></i> Map</button>
+                <button class="tab-btn" data-tab="tab-network"><i class="fa-solid fa-network-wired"></i> Network</button>
+                <button class="tab-btn" data-tab="tab-predict"><i class="fa-solid fa-brain"></i> ML Predictor</button>
+            </nav>
+
+            <!-- Tab Content -->
+            <div class="tab-content-container" style="position: relative;">
+                <div class="loading-overlay" id="globalLoadingOverlay">
+                    <div class="spinner"></div>
+                </div>
+                <!-- Overview Tab -->
+                <div id="tab-overview" class="tab-pane active">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-icon"><i class="fa-solid fa-folder-open"></i></div>
+                            <div class="metric-info">
+                                <span class="label">Total Records</span>
+                                <h3 id="statRecords">-</h3>
+                                <span class="delta" id="deltaRecords"></span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon"><i class="fa-solid fa-wind"></i></div>
+                            <div class="metric-info">
+                                <span class="label">Average AQI</span>
+                                <h3 id="statAvgAqi">-</h3>
+                                <span class="delta" id="deltaAvgAqi"></span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon warning"><i class="fa-solid fa-skull-crossbones"></i></div>
+                            <div class="metric-info">
+                                <span class="label">Hazardous Cities</span>
+                                <h3 id="statHazardous">-</h3>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon"><i class="fa-solid fa-globe"></i></div>
+                            <div class="metric-info">
+                                <span class="label">Countries Affected</span>
+                                <h3 id="statCountries">-</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="visuals-grid">
+                        <div class="chart-card">
+                            <h3>Category Distribution</h3>
+                            <div class="chart-container">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Top Affected Countries</h3>
+                            <div class="chart-container">
+                                <canvas id="topCountriesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div id="tab-analytics" class="tab-pane">
+                    <div class="visuals-grid">
+                        <div class="chart-card large">
+                            <h3>AQI Distribution Histogram</h3>
+                            <div class="chart-container">
+                                <canvas id="histogramChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card large">
+                            <h3>Average Pollutant Levels</h3>
+                            <div class="chart-container">
+                                <canvas id="pollutantsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hazardous Tab -->
+                <div id="tab-hazardous" class="tab-pane">
+                    <div class="hazardous-alert" id="hazAlert"></div>
+                    <div class="split-grid">
+                        <div class="list-card">
+                            <h3>Most Critical Cities</h3>
+                            <div class="table-container">
+                                <table class="custom-table" id="criticalCitiesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>City</th>
+                                            <th>Country</th>
+                                            <th>AQI</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Hazardous Cities count by Country</h3>
+                            <div class="chart-container">
+                                <canvas id="hazardousByCountryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deep Dive Tab -->
+                <div id="tab-deepdive" class="tab-pane">
+                    <div id="deepdivePlaceholder" class="placeholder-alert">
+                        <i class="fa-solid fa-circle-info"></i> Select a specific country from the sidebar to view detailed analysis.
+                    </div>
+                    <div id="deepdiveContent" style="display: none;">
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-info">
+                                    <span class="label">Cities</span>
+                                    <h3 id="ddCities">-</h3>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-info">
+                                    <span class="label">Avg AQI</span>
+                                    <h3 id="ddAvgAqi">-</h3>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-info">
+                                    <span class="label">Hazardous Cities</span>
+                                    <h3 id="ddHazardous">-</h3>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-info">
+                                    <span class="label">Max AQI</span>
+                                    <h3 id="ddMaxAqi">-</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="list-card full-width">
+                            <h3>All Cities in <span id="ddCountryTitle">Country</span></h3>
+                            <div class="table-container">
+                                <table class="custom-table" id="deepdiveTable">
+                                    <thead>
+                                        <tr>
+                                            <th>City</th>
+                                            <th>AQI Value</th>
+                                            <th>AQI Category</th>
+                                            <th>CO AQI</th>
+                                            <th>Ozone AQI</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visuals Tab -->
+                <div id="tab-visuals" class="tab-pane">
+                    <div class="visuals-grid">
+                        <div class="chart-card">
+                            <h3>Category Pie Chart</h3>
+                            <div class="chart-container">
+                                <canvas id="pieChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Scatter: AQI vs Pollutants (Sampled)</h3>
+                            <div class="chart-container">
+                                <canvas id="scatterChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Tab -->
+                <div id="tab-map" class="tab-pane">
+                    <div class="map-card">
+                        <h3>Geographic Heat Map</h3>
+                        <p class="section-desc">Interactive map showing average air quality levels across top countries</p>
+                        <div id="aqiMap" class="map-box"></div>
+                    </div>
+                </div>
+
+                <!-- Network Tab -->
+                <div id="tab-network" class="tab-pane">
+                    <div class="network-card">
+                        <h3>Relationship Network</h3>
+                        <p class="section-desc">Top 8 countries and their top 3 most polluted cities connected via weight edges</p>
+                        <div id="networkGraph" class="network-box"></div>
+                        <div class="network-stats">
+                            <div class="n-stat">
+                                <span class="val" id="netNodesCount">0</span>
+                                <span class="lbl">Total Nodes</span>
+                            </div>
+                            <div class="n-stat">
+                                <span class="val" id="netEdgesCount">0</span>
+                                <span class="lbl">Total Connections</span>
+                            </div>
+                            <div class="n-stat">
+                                <span class="val" id="netDensityVal">0.0</span>
+                                <span class="lbl">Network Density</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ML Predictor Tab -->
+                <div id="tab-predict" class="tab-pane">
+                    <div class="predictor-container">
+                        <div class="predictor-card">
+                            <h3>AQI Category Predictor</h3>
+                            <p class="desc">Enter the concentration indices of pollutants to predict the category using our Decision Tree ML model.</p>
+                            
+                            <form id="predictionForm" class="predictor-form">
+                                <div class="form-row">
+                                    <div class="form-input-group">
+                                        <label for="inputCO">CO (Carbon Monoxide) AQI</label>
+                                        <input type="number" id="inputCO" min="0" max="500" value="10" required class="form-control">
+                                    </div>
+                                    <div class="form-input-group">
+                                        <label for="inputOzone">Ozone AQI</label>
+                                        <input type="number" id="inputOzone" min="0" max="500" value="30" required class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-input-group">
+                                        <label for="inputNO2">NO2 (Nitrogen Dioxide) AQI</label>
+                                        <input type="number" id="inputNO2" min="0" max="500" value="15" required class="form-control">
+                                    </div>
+                                    <div class="form-input-group">
+                                        <label for="inputPM25">PM2.5 AQI</label>
+                                        <input type="number" id="inputPM25" min="0" max="500" value="85" required class="form-control">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-predict"><i class="fa-solid fa-wand-magic-sparkles"></i> Predict Air Quality</button>
+                            </form>
+                        </div>
+                        
+                        <div class="predictor-result-card" id="predResultCard" style="display: none;">
+                            <h3>Prediction Result</h3>
+                            <div class="result-badge" id="predBadge">-</div>
+                            <p class="result-desc" id="predDesc">-</p>
+                            <div class="tree-note">
+                                <i class="fa-solid fa-circle-nodes"></i> Model: Trained Decision Tree Classifier (accuracy ~98%).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Script Libraries -->
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet.js -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Vis Network JS for beautiful Graphs -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- Custom Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
