@@ -18,10 +18,11 @@
 <body>
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="logo-area">
                 <i class="fa-solid fa-earth-americas logo-icon"></i>
                 <h2>AQI Dashboard</h2>
+                <button id="sidebarClose" class="sidebar-close-btn" aria-label="Close sidebar"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="controls-container">
@@ -68,6 +69,7 @@
         <!-- Main Content Area -->
         <main class="main-content">
             <header class="main-header">
+                <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
                 <div class="header-titles">
                     <h1>Global Air Quality Dashboard</h1>
                     <p class="subtitle">Real-time monitoring of air pollution across the globe</p>
@@ -337,6 +339,8 @@
             </div>
         </main>
     </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Script Libraries -->
     <!-- Chart.js -->

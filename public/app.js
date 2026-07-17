@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTabs();
     initSliders();
     initPredictor();
+    initSidebarToggle();
     await fetchMetadata();
     triggerQuery();
 });
@@ -92,6 +93,49 @@ function initTabs() {
             }
         });
     });
+}
+
+// Mobile Sidebar Drawer Toggle logic
+function initSidebarToggle() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const closeBtn = document.getElementById('sidebarClose');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    if (!sidebar || !toggleBtn || !closeBtn || !overlay) return;
+
+    const openSidebar = () => {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+    };
+
+    const closeSidebar = () => {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    };
+
+    toggleBtn.addEventListener('click', openSidebar);
+    closeBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    // Auto-close sidebar on mobile when tab changes or country selection changes
+    const closeOnMobile = () => {
+        if (window.innerWidth <= 992) {
+            closeSidebar();
+        }
+    };
+
+    // Close when tab is selected
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', closeOnMobile);
+    });
+
+    // Close when country is changed
+    const countrySelect = document.getElementById('countrySelect');
+    if (countrySelect) {
+        countrySelect.addEventListener('change', closeOnMobile);
+    }
 }
 
 // Slider double-handle range simulation
